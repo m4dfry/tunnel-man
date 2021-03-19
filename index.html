@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Hello</title>
+</head>
+
+<body>
+    <h1>Hello, world!</h1>
+    <h2>Comm through Webview bind:</h2>
+    <p id='world'>no-world</p>
+    <h2>Comm through API:</h2>
+    <p id='version'>no-version</p>
+    <h2>Comm through Web Socket: </h2>
+    <h3> WP Log: </h3>
+    <p id='wp-log'></p>
+
+    <h3> WP Message: </h3>
+    <label for="l-msg">Message:</label>
+    <input type="text" id="i-msg" onkeyup="socket.send(this.value);"><br>
+    <p id='wp-message'></p>
+
+</body>
+<script>
+    hello().then((x) => { document.getElementById("world").innerHTML = x })
+    hello().then((x) => { console.log(x) })
+
+    function setVersion(v) {
+        document.getElementById("version").innerHTML = v;
+    }
+
+    function addWPLog(v) {
+        document.getElementById("wp-log").insertAdjacentHTML('beforeEnd', v);
+        document.getElementById("wp-log").insertAdjacentHTML('beforeEnd', '<br>');
+    }
+
+    fetch("http://localhost:8090/version")
+        .then(response => response.text())
+        .then(data => setVersion(data))
+        .catch(function () {
+            setVersion("ERROR");
+        });
+
+    let socket = new WebSocket("ws://127.0.0.1:8090/ws");
+    addWPLog("Attempting Connection...");
+
+    socket.onopen = () => {
+        addWPLog("Successfully Connected");
+        socket.send("Hi From the Client!");
+    };
+
+    socket.onmessage = function (event) {
+        document.getElementById("wp-message").insertAdjacentHTML('beforeEnd', event.data);
+        document.getElementById("wp-message").insertAdjacentHTML('beforeEnd', '<br>');
+    }
+
+    socket.onclose = event => {
+        addWPLog("Socket Closed Connection: ", event);
+        socket.send("Client Closed!")
+    };
+
+    socket.onerror = error => {
+        addWPLog("Socket Error: ", error);
+    };
+
+</script>
+
+</html>
