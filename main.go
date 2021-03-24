@@ -14,7 +14,7 @@ func main() {
 	w := webview.New(debug)
 	defer w.Destroy()
 
-	w.SetTitle("Go Webview Test")
+	w.SetTitle("Tunnel Man")
 	w.SetSize(800, 600, webview.HintNone)
 
 	// Create a GoLang function callable from JS
