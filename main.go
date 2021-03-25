@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/webview/webview"
 )
 
@@ -10,6 +13,19 @@ func main() {
 		r.Run("localhost:8090")
 	}()
 
+	go func() {
+		Tunnel()
+	}()
+
+	//startInterface()
+	for {
+		fmt.Println("Infinite Loop 1")
+		time.Sleep(time.Second)
+	}
+
+}
+
+func startInterface() {
 	debug := true
 	w := webview.New(debug)
 	defer w.Destroy()
