@@ -1,5 +1,4 @@
 import React from 'react'
-import StopLightH from '../../../assets/stop-light-h.svg'
 import './index.css'
 
 export enum SelectableStatus {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"io/fs"
 	"log"
 	"net/http"
@@ -26,21 +27,13 @@ const version string = "0.1.0"
 type Routes struct {
 	Mux     *mux.Router
 	Negroni *negroni.Negroni
-	//Ctx        lib.Context
-	//DB         *lib.DB
-	//Log        *lib.Log
-	//AuthEnable bool
-}
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin:     func(r *http.Request) bool { return true },
+	tunnels TunnelsMap
 }
 
 // NewRoutes create API backend for the program
-func NewRoutes() Routes {
+func NewRoutes(td TunnelsMap) Routes {
 	r := Routes{}
+	r.tunnels = td
 	return r
 }
 
@@ -59,6 +52,18 @@ func message(w http.ResponseWriter, r *http.Request) {
 func getVersion(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(version))
 }
+
+func (t *TunnelsMap) getTunnels(w http.ResponseWriter, r *http.Request) {
+	data, err := json.Marshal(t)
+	if err != nil {
+		log.Println(err)
+	}
+	w.Write(data)
+}
+
+func (t *TunnelsMap) openTunnel(w http.ResponseWriter, r *http.Request) {}
+
+func (t *TunnelsMap) closeTunnel(w http.ResponseWriter, r *http.Request) {}
 
 /* WEBSOCKET */
 func wsInteract(conn *websocket.Conn) {
@@ -97,6 +102,12 @@ func wsInteract(conn *websocket.Conn) {
 	}
 }
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true },
+}
+
 func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	// upgrade this connection to a WebSocket
 	// connection
@@ -125,11 +136,15 @@ func (r *Routes) Run(addr string) {
 	r.Mux.HandleFunc("/api/welcome", message).Methods("GET")
 	r.Mux.HandleFunc("/api/version", getVersion).Methods("GET")
 
+	// API tunnel handler
+	r.Mux.HandleFunc("/api/tunnel", r.tunnels.getTunnels).Methods("GET")
+	r.Mux.HandleFunc("/api/opentunnel", r.tunnels.openTunnel).Methods("POST")
+	r.Mux.HandleFunc("/api/closetunnel", r.tunnels.closeTunnel).Methods("POST")
+
 	// WebSocket handler
 	r.Mux.HandleFunc("/api/ws", wsEndpoint)
 
 	// UI handler
-
 	assetsSubFs, _ := fs.Sub(fs.FS(assetsDir), "ui/dist")
 	assetsFileServe := http.FileServer(http.FS(assetsSubFs))
 

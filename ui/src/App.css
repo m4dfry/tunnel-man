@@ -11,25 +11,54 @@
     font-family: 'B612Mono';
     src: url('B612Mono-Regular.ttf') format('truetype');
 }
-  
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}
 
 body {
-    font-family: 'B612Mono' !important;
+  margin: 0;
+  font-family: Arial;
+  background-color: #f2f2f2;
 }
 
-.main-container {
-    margin-top: 10px;
+.box {
+  color: #fff;
+  padding: 1em;
+  text-align: center;
 }
 
-.navbar {
-    background-color: var(--opal);
-    border-style: double;
+input {
+  width: 100%;
+  padding: 1em;
+  outline: none;
+  border: 1px solid #f2f2f2;
+}
+/* Our Grid Code */
+
+.app-layout {
+  display: grid;
+  height: 100vh;
+  grid-template-rows: auto 1fr auto;
 }
 
-.navbar div {
-    place-content: center;
+.header  { background-color: #ffffff; }
+.table   { background-color: #ffffff; }
+.write   { background-color: #f2f2f2; }
+
+.header {
+  grid-row: 1;
+  color: #333;
+  border-bottom: 1px solid #f2f2f2;
 }
 
-.title {
-    font-size: x-large;
+.table {
+  grid-row: 2;
+  padding: 0 1em;
+  overflow-y: scroll;
+}
+
+.input {
+  grid-row: 3;
 }

@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React from 'react'
 import Semaphore, { SelectableStatus } from '../semaphore'
+import Row from '../row'
 
 function Table() {
     return (
@@ -12,22 +13,18 @@ function Table() {
                         <th scope="col">Bastion</th>
                         <th scope="col">Local Port</th>
                         <th scope="col">State</th>
+                        <th scope="col">Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <th scope="row">First</th>
-                        <td>127.0.0.1</td>
-                        <td>Local</td>
-                        <td>80</td>
-                        <td><Semaphore status={SelectableStatus.Running}/></td>
-                    </tr>
+                    <Row />
                     <tr>
                         <th scope="row">Second</th>
                         <td>192.127.0.1</td>
                         <td>remote.com</td>
                         <td>8080</td>
                         <td><Semaphore status={SelectableStatus.Warning}/></td>
+                        <td>-</td>
                     </tr>
                     <tr>
                         <th scope="row">Third</th>
@@ -35,6 +32,7 @@ function Table() {
                         <td>domain.it</td>
                         <td>8090</td>
                         <td><Semaphore status={SelectableStatus.Off}/></td>
+                        <td>-</td>
                     </tr>
                 </tbody>
             </table>

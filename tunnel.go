@@ -11,6 +11,29 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
+type ConfigurationFile struct {
+	Certificates []struct {
+		Name  string   `json:"name"`
+		Files []string `json:"files"`
+	} `json:"certificates"`
+	Tunnels []struct {
+		Name        string `json:"name"`
+		Bastion     string `json:"bastion"`
+		Address     string `json:"address"`
+		Localport   string `json:"localPort"`
+		Certificate string `json:"certificate"`
+	} `json:"tunnels"`
+}
+
+type Tunnel struct {
+	Bastion          string   `json:"bastion"`
+	Address          string   `json:"address"`
+	Localport        string   `json:"localPort"`
+	CertificatesPath []string `json:"-"`
+}
+
+type TunnelsMap map[string]*Tunnel
+
 /** Idea from: https://ixday.github.io/post/golang_ssh_tunneling/ **/
 
 const EnvSSHAuthSock = "SSH_AUTH_SOCK"
@@ -27,7 +50,7 @@ func authAgent() (ssh.AuthMethod, error) {
 	return ssh.PublicKeysCallback(client.Signers), nil
 }
 
-func createTunnel(conn *ssh.Client, local, remote string) error {
+func startTunnel(conn *ssh.Client, local, remote string) error {
 	pipe := func(writer, reader net.Conn) {
 		defer writer.Close()
 		defer reader.Close()
@@ -57,7 +80,7 @@ func createTunnel(conn *ssh.Client, local, remote string) error {
 	}
 }
 
-func Tunnel() {
+func CreateTunnel() {
 	// initiate auths methods
 	authAgent, err := authAgent()
 	if err != nil {
@@ -88,7 +111,7 @@ func Tunnel() {
 	}
 
 	// tunnel traffic between local port 1600 and remote port 1500
-	if err := createTunnel(clientConn, "localhost:8080", "<remote address>:8095"); err != nil {
+	if err := startTunnel(clientConn, "localhost:8080", "<remote address>:8095"); err != nil {
 		log.Fatalf("failed to tunnel traffic: %q", err)
 	}
 }

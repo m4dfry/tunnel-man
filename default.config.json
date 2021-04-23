@@ -1,0 +1,34 @@
+{
+    "certificates" : [
+            {
+                "name": "asd",
+                "files": [
+                    "/home/user/cert1.pem",
+                    "/home/user/cert2.pem"
+                ]
+            }
+        ],
+    "tunnels" : [
+            {
+                "name": "First",
+                "bastion": "user@remote.com",
+                "address": "localhost:8080",
+                "localPort": "8081",
+                "certificate": "asd"
+            },
+            {
+                "name": "Second",
+                "bastion": "user@domain.it",
+                "address": "10.10.10.10:8080",
+                "localPort": "8081",
+                "certificate": "asd"
+            },
+            {
+                "name": "Third",
+                "bastion": "ubuntu@192.168.1.10",
+                "address": "1.2.3.4:8080",
+                "localPort": "8081",
+                "certificate": "asd"
+            }
+    ]
+}

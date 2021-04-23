@@ -7,7 +7,15 @@ import Table from './components/table';
 function App() {
   return (
     <div className="App">
-      <Table />
+      <div className="app-layout">
+        <div className="header box"><h1>Tunnel🤦‍♂️Man</h1></div>
+        <div className="table box">
+          <Table />
+        </div>
+        <div className="input box">
+          <input type="text" placeholder=" 🔎 Filter ..."/>
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,28 +1,64 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"time"
+	"io/ioutil"
+	"os"
 
 	"github.com/webview/webview"
 )
 
 func main() {
+	tunnelDef := readConf()
+
 	go func() {
-		r := NewRoutes()
+		r := NewRoutes(tunnelDef)
 		r.Run("localhost:8090")
 	}()
 
-	go func() {
-		Tunnel()
-	}()
-
-	//startInterface()
-	for {
-		fmt.Println("Infinite Loop 1")
+	startInterface()
+	/*for {
+		fmt.Println("Infinite loop for BE test purpose")
 		time.Sleep(time.Second)
+	}*/
+
+}
+
+func readConf() TunnelsMap {
+	// open json file
+	jsonFile, err := os.Open("default.config.json")
+	if err != nil {
+		fmt.Println(err)
+	}
+	// defer the closing of file
+	defer jsonFile.Close()
+
+	// read file as byte array
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	// initialize & unmarshal config
+	var conf ConfigurationFile
+	json.Unmarshal(byteValue, &conf)
+
+	// type TunnelsMap map[string]Tunnel
+	var ret = make(TunnelsMap)
+	var certs = make(map[string][]string)
+
+	for _, c := range conf.Certificates {
+		certs[c.Name] = c.Files
 	}
 
+	for _, t := range conf.Tunnels {
+		ret[t.Name] = &Tunnel{
+			t.Bastion,
+			t.Address,
+			t.Localport,
+			certs[t.Certificate],
+		}
+	}
+
+	return ret
 }
 
 func startInterface() {
