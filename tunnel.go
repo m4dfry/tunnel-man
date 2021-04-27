@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/user"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -33,6 +33,10 @@ type Tunnel struct {
 }
 
 type TunnelsMap map[string]*Tunnel
+type TunnelsManager struct {
+	buffer     chan string
+	tunnelsMap TunnelsMap
+}
 
 /** Idea from: https://ixday.github.io/post/golang_ssh_tunneling/ **/
 
@@ -50,7 +54,8 @@ func authAgent() (ssh.AuthMethod, error) {
 	return ssh.PublicKeysCallback(client.Signers), nil
 }
 
-func startTunnel(conn *ssh.Client, local, remote string) error {
+// https://ixday.github.io/post/golang_ssh_tunneling/
+func tunnel(conn *ssh.Client, local, remote string) error {
 	pipe := func(writer, reader net.Conn) {
 		defer writer.Close()
 		defer reader.Close()
@@ -80,38 +85,42 @@ func startTunnel(conn *ssh.Client, local, remote string) error {
 	}
 }
 
-func CreateTunnel() {
+func (tm *TunnelsManager) CreateTunnel(name string) {
+	t := tm.tunnelsMap[name]
+	if t == nil {
+		log.Fatalf("tunnel %s not found", name)
+	}
+
+	bsplit := strings.Split(t.Bastion, "@")
+	if len(bsplit) < 2 {
+		log.Fatalf("failed to read bastion data: %s", t.Bastion)
+	}
+	user := bsplit[0]
+	bastionaddr := bsplit[1]
+
 	// initiate auths methods
 	authAgent, err := authAgent()
 	if err != nil {
 		log.Fatalf("failed to connect to the ssh agent: %q", err)
 	}
 
-	// here I am retrieving user from current execution,
-	// you can pass it as argument if you want
-	current, err := user.Current()
-	if err != nil {
-		log.Fatalf("failed to create ssh config: %q", err)
-	}
-	log.Printf("user.Current(): %q", current)
-
 	// initialize SSH connection
 	clientConfig := &ssh.ClientConfig{
 		//User: current.Username,
-		User: "<username>",
+		User: user,
 		Auth: []ssh.AuthMethod{authAgent},
 		// you should not pass this option, but for the sake of simplicity
 		// we use it here
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	clientConn, err := ssh.Dial("tcp", "<bastion host>:22", clientConfig)
+	clientConn, err := ssh.Dial("tcp", bastionaddr, clientConfig)
 	if err != nil {
 		log.Fatalf("failed to connect to the ssh server: %q", err)
 	}
 
 	// tunnel traffic between local port 1600 and remote port 1500
-	if err := startTunnel(clientConn, "localhost:8080", "<remote address>:8095"); err != nil {
+	if err := tunnel(clientConn, "localhost:"+t.Localport, t.Address); err != nil {
 		log.Fatalf("failed to tunnel traffic: %q", err)
 	}
 }

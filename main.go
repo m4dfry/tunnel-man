@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"time"
 
 	"github.com/webview/webview"
 )
@@ -17,17 +19,17 @@ func main() {
 		r.Run("localhost:8090")
 	}()
 
-	startInterface()
-	/*for {
+	//startInterface()
+	for {
 		fmt.Println("Infinite loop for BE test purpose")
 		time.Sleep(time.Second)
-	}*/
+	}
 
 }
 
-func readConf() TunnelsMap {
+func readConf() *TunnelsManager {
 	// open json file
-	jsonFile, err := os.Open("default.config.json")
+	jsonFile, err := os.Open("config.json")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -58,7 +60,9 @@ func readConf() TunnelsMap {
 		}
 	}
 
-	return ret
+	log.Printf("%v", ret)
+
+	return &TunnelsManager{make(chan string), ret}
 }
 
 func startInterface() {

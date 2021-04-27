@@ -30,7 +30,7 @@ const Semaphore = ( {status} : ISemaphoreProps ) => {
 const circle = (color : string) => {
     return (
         <svg height="28" width="28">
-            <circle cx="16" cy="14" r="8" stroke="black" stroke-width="3" fill={color} />
+            <circle cx="16" cy="14" r="8" stroke="black" strokeWidth="3" fill={color} />
         </svg>)
 }
 

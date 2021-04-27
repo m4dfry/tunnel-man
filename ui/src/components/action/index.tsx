@@ -1,4 +1,4 @@
-import React from 'react'
+import React, {FunctionComponent} from 'react'
 import './index.css'
 
 const icons = {
@@ -14,19 +14,37 @@ function DrawIcon(icon: string) {
     )
 }
 
-function Action() {
+function open(name : string){
+    call(`http://localhost:8090/api/open/${name}`)
+}
+function close(name : string){
+    call(`http://localhost:8090/api/close/${name}`)
+}
+// https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
+function call(url: string){
+  fetch(url, {
+    method: 'POST',
+  });
+  
+}
+
+interface ActionProps {
+    name: string
+}
+
+export const Action: FunctionComponent<ActionProps> = (
+    props: ActionProps
+) => {
     return (
         <div className='action'>
-            <button type="button" className="btn btn-outline-success btn-sm">
+            <button type="button" onClick={() => open(props.name)} className="btn btn-outline-success btn-sm">
                { DrawIcon(icons.play) }
             </button>
-            <button type="button" className="btn btn-outline-danger btn-sm">
+            <button type="button" onClick={() => close(props.name)} className="btn btn-outline-danger btn-sm">
                 { DrawIcon(icons.stop) }
             </button>
         </div>    
     )
 }
-
-
 
 export default Action

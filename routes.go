@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -27,13 +26,13 @@ const version string = "0.1.0"
 type Routes struct {
 	Mux     *mux.Router
 	Negroni *negroni.Negroni
-	tunnels TunnelsMap
+	tunnels *TunnelsManager
 }
 
 // NewRoutes create API backend for the program
-func NewRoutes(td TunnelsMap) Routes {
+func NewRoutes(tm *TunnelsManager) Routes {
 	r := Routes{}
-	r.tunnels = td
+	r.tunnels = tm
 	return r
 }
 
@@ -45,70 +44,30 @@ func defaultHeaderMiddleware(rw http.ResponseWriter, r *http.Request, next http.
 }
 
 /* API */
-func message(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Here we GO!\n"))
-}
-
 func getVersion(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(version))
 }
 
-func (t *TunnelsMap) getTunnels(w http.ResponseWriter, r *http.Request) {
-	data, err := json.Marshal(t)
+func (t *TunnelsManager) getTunnels(w http.ResponseWriter, r *http.Request) {
+	data, err := json.Marshal(t.tunnelsMap)
 	if err != nil {
 		log.Println(err)
 	}
 	w.Write(data)
 }
 
-func (t *TunnelsMap) openTunnel(w http.ResponseWriter, r *http.Request) {}
+func (t *TunnelsManager) openTunnel(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	name := params["name"]
 
-func (t *TunnelsMap) closeTunnel(w http.ResponseWriter, r *http.Request) {}
+	log.Printf("open tunnel %s", name)
+	t.CreateTunnel(name)
+}
+
+func (t *TunnelsManager) closeTunnel(w http.ResponseWriter, r *http.Request) {}
 
 /* WEBSOCKET */
-func wsInteract(conn *websocket.Conn) {
-
-	c1 := make(chan string)
-
-	go func() {
-		for {
-			_, p, err := conn.ReadMessage()
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			in := string(p)
-			// print out that message for clarity
-			log.Println("received:" + in)
-			c1 <- in
-		}
-	}()
-
-	go func() {
-		for {
-			time.Sleep(2 * time.Second)
-			c1 <- "* WAKE-UP 2SEC *"
-		}
-	}()
-
-	for {
-		select {
-		case msg := <-c1:
-			if err := conn.WriteMessage(1, []byte(strings.ToUpper(msg))); err != nil {
-				log.Println(err)
-				return
-			}
-		}
-	}
-}
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin:     func(r *http.Request) bool { return true },
-}
-
-func wsEndpoint(w http.ResponseWriter, r *http.Request) {
+func (t *TunnelsManager) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	// upgrade this connection to a WebSocket
 	// connection
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -121,9 +80,26 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	// listen indefinitely for new messages coming
-	// through on our WebSocket connection
-	wsInteract(ws)
+
+	wsSend(ws, t.buffer)
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true },
+}
+
+func wsSend(conn *websocket.Conn, c chan string) {
+	for {
+		select {
+		case msg := <-c:
+			if err := conn.WriteMessage(1, []byte(strings.ToUpper(msg))); err != nil {
+				log.Println(err)
+				return
+			}
+		}
+	}
 }
 
 // Run API function
@@ -133,16 +109,15 @@ func (r *Routes) Run(addr string) {
 	r.Mux = mux.NewRouter()
 
 	// API handler
-	r.Mux.HandleFunc("/api/welcome", message).Methods("GET")
 	r.Mux.HandleFunc("/api/version", getVersion).Methods("GET")
 
 	// API tunnel handler
-	r.Mux.HandleFunc("/api/tunnel", r.tunnels.getTunnels).Methods("GET")
-	r.Mux.HandleFunc("/api/opentunnel", r.tunnels.openTunnel).Methods("POST")
-	r.Mux.HandleFunc("/api/closetunnel", r.tunnels.closeTunnel).Methods("POST")
+	r.Mux.HandleFunc("/api/tunnels", r.tunnels.getTunnels).Methods("GET")
+	r.Mux.HandleFunc("/api/open/{name}", r.tunnels.openTunnel).Methods("POST")
+	r.Mux.HandleFunc("/api/close/{name}", r.tunnels.closeTunnel).Methods("POST")
 
 	// WebSocket handler
-	r.Mux.HandleFunc("/api/ws", wsEndpoint)
+	r.Mux.HandleFunc("/api/ws", r.tunnels.wsEndpoint)
 
 	// UI handler
 	assetsSubFs, _ := fs.Sub(fs.FS(assetsDir), "ui/dist")
